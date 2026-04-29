@@ -26,26 +26,8 @@ import java.util.List;
 @RepositoryRestResource(collectionResourceRel = "authors", path = "authors")
 public interface AuthorRepository extends JpaRepository<Author, String> {
 
-    /**
-     * Custom Method 1: Find all authors by city.
-     *
-     * Spring Data reads the method name and creates this SQL automatically:
-     *   SELECT * FROM authors WHERE city = ?
-     *
-     * This is exposed at:
-     *   GET /api/authors/search/findByCity?city=Oakland
-     */
     List<Author> findByCity(String city);
 
-    /**
-     * Custom Method 2: Find all authors by state.
-     *
-     * Spring Data creates this SQL automatically:
-     *   SELECT * FROM authors WHERE state = ?
-     *
-     * This is exposed at:
-     *   GET /api/authors/search/findByState?state=CA
-     */
     List<Author> findByState(String state);
 
 }

@@ -130,4 +130,55 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(505, "HTTP Version Not Supported", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.HTTP_VERSION_NOT_SUPPORTED);   // 505
     }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex) {
+
+        List<String> errors = ex.getConstraintViolations()
+                .stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(Collectors.toList());
+
+        Map<String, Object> body = buildErrorResponse(400, "Validation Failed", "One or more fields are invalid");
+        body.put("validationErrors", errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+    // Add these handlers in the proper order (between 400 and 401 sections)
+
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — Invalid request data
+    // -------------------------------------------------------
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Invalid Request", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — Bad request parameters
+    // -------------------------------------------------------
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleBadRequest(BadRequestException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+
+    // -------------------------------------------------------
+    // 409 CONFLICT — Duplicate resource
+    // -------------------------------------------------------
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResource(DuplicateResourceException ex) {
+        Map<String, Object> body = buildErrorResponse(409, "Conflict", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);   // 409
+    }
+
+    // -------------------------------------------------------
+    // 409 CONFLICT — General conflict with existing state
+    // -------------------------------------------------------
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
+        Map<String, Object> body = buildErrorResponse(409, "Conflict", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);   // 409
+    }
 }

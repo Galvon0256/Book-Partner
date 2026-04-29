@@ -3,18 +3,6 @@ package com.cg.entity;
 import java.io.Serializable;
 import java.util.Objects;
 
-/**
- * TitleAuthorId — Composite Primary Key for the "titleauthor" table.
- *
- * The titleauthor table has a composite PK made of:
- *   - au_id    (author's ID)
- *   - title_id (title's ID)
- *
- * When a table has composite PK in JPA, we need a separate class
- * that implements Serializable and has equals() + hashCode().
- *
- * This class is used with @IdClass(TitleAuthorId.class) on TitleAuthor entity.
- */
 public class TitleAuthorId implements Serializable {
 
     private String auId;
@@ -35,7 +23,6 @@ public class TitleAuthorId implements Serializable {
     public String getTitleId() { return titleId; }
     public void setTitleId(String titleId) { this.titleId = titleId; }
 
-    // equals() and hashCode() are REQUIRED for composite keys to work correctly
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
