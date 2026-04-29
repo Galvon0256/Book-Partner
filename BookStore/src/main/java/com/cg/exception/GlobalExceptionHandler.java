@@ -130,4 +130,18 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(505, "HTTP Version Not Supported", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.HTTP_VERSION_NOT_SUPPORTED);   // 505
     }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex) {
+
+        List<String> errors = ex.getConstraintViolations()
+                .stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(Collectors.toList());
+
+        Map<String, Object> body = buildErrorResponse(400, "Validation Failed", "One or more fields are invalid");
+        body.put("validationErrors", errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
 }
