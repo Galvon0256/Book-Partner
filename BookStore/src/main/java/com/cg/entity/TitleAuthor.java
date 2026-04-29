@@ -32,6 +32,10 @@ public class TitleAuthor {
     @JsonIgnore
     private Author author;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "title_id", insertable = false, updatable = false)
+    @JsonIgnore
+    private Title title;
     public TitleAuthor() {
         // Required by JPA
     }
@@ -58,13 +62,21 @@ public class TitleAuthor {
     public Author getAuthor() { return author; }
     public void setAuthor(Author author) { this.author = author; }
 
+    public Title getTitle() { return title; }
+    public void setTitle(Title title) { this.title = title; }
+
+    
+
     @Override
-    public String toString() {
-        return "TitleAuthor{" +
-                "auId='" + auId + '\'' +
-                ", titleId='" + titleId + '\'' +
-                ", auOrd=" + auOrd +
-                ", royaltyper=" + royaltyper +
-                '}';
-    }
+public String toString() {
+    return "TitleAuthor{" +
+            "auId='" + auId + '\'' +
+            ", titleId='" + titleId + '\'' +
+            ", auOrd=" + auOrd +
+            ", royaltyper=" + royaltyper +
+            ", titleName='" + (title != null ? title.getTitle() : "null") + '\'' +
+            ", titleType='" + (title != null ? title.getType() : "null") + '\'' +
+            ", titleRoyalty=" + (title != null ? title.getRoyalty() : "null") +
+            '}';
+}
 }

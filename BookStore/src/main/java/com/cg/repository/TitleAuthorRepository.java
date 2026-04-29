@@ -5,10 +5,11 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.cg.entity.TitleAuthor;
 import com.cg.entity.TitleAuthorId;
+import com.cg.projections.TitleAuthorProjection;
 
 import java.util.List;
 
-@RepositoryRestResource(collectionResourceRel = "titleauthors", path = "titleauthors")
+@RepositoryRestResource(collectionResourceRel = "titleauthors", path = "titleauthors", excerptProjection = TitleAuthorProjection.class)
 public interface TitleAuthorRepository extends JpaRepository<TitleAuthor, TitleAuthorId> {
 
     List<TitleAuthor> findByAuId(String auId);
