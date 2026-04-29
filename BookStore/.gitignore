@@ -33,3 +33,16 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Eclipse ###
+.classpath
+.project
+.settings/
+
+### metadata ###
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+.metadata/
