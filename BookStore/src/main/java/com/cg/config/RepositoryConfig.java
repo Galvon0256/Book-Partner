@@ -8,7 +8,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 
 import com.cg.entity.Author;
 import com.cg.entity.TitleAuthor;
-
+import com.cg.entity.Publisher;
 @Configuration
 public class RepositoryConfig implements RepositoryRestConfigurer {
 
@@ -19,7 +19,7 @@ public class RepositoryConfig implements RepositoryRestConfigurer {
         // 1. Expose entity IDs in JSON responses
         //    Without this, the JSON won't include "auId" or "titleId"
         // -------------------------------------------------------
-        config.exposeIdsFor(Author.class, TitleAuthor.class);
+        config.exposeIdsFor(Author.class, TitleAuthor.class, Publisher.class);
 
         // -------------------------------------------------------
         // 2. Disable DELETE for both Author and TitleAuthor

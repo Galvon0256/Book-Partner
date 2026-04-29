@@ -4,20 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.util.List;
 
-/**
- * Author entity — maps to the "authors" table in the "pubs" database.
- *
- * Validations are placed here directly (no separate DTO needed).
- * We do NOT use Lombok — all getters/setters are written manually.
- */
 @Entity
 @Table(name = "authors")
 public class Author {
 
-    // -------------------------------------------------------
-    // Primary Key
-    // Author ID must be in format: 999-99-9999 (like SSN)
-    // -------------------------------------------------------
     @Id
     @Column(name = "au_id", length = 11, nullable = false)
     @NotBlank(message = "Author ID is required")
@@ -27,9 +17,6 @@ public class Author {
     )
     private String auId;
 
-    // -------------------------------------------------------
-    // Name fields
-    // -------------------------------------------------------
     @Column(name = "au_lname", length = 40, nullable = false)
     @NotBlank(message = "Last name is required")
     @Size(max = 40, message = "Last name must not exceed 40 characters")
@@ -40,17 +27,11 @@ public class Author {
     @Size(max = 20, message = "First name must not exceed 20 characters")
     private String auFname;
 
-    // -------------------------------------------------------
-    // Phone — default value is UNKNOWN if not provided
-    // -------------------------------------------------------
     @Column(name = "phone", length = 12, nullable = false)
     @NotBlank(message = "Phone is required")
     @Size(max = 12, message = "Phone must not exceed 12 characters")
     private String phone = "UNKNOWN";
 
-    // -------------------------------------------------------
-    // Address fields — all optional (nullable)
-    // -------------------------------------------------------
     @Column(name = "address", length = 40)
     private String address;
 
@@ -68,26 +49,14 @@ public class Author {
     )
     private String zip;
 
-    // -------------------------------------------------------
-    // Contract — 0 means no contract, 1 means has contract
-    // -------------------------------------------------------
     @Column(name = "contract", nullable = false)
     @NotNull(message = "Contract field is required (use 0 or 1)")
     @Min(value = 0, message = "Contract must be 0 or 1")
     @Max(value = 1, message = "Contract must be 0 or 1")
     private Integer contract;
-
-    // -------------------------------------------------------
-    // Relationship — One Author can have many TitleAuthor records
-    // mappedBy = "author" refers to the field name in TitleAuthor entity
-    // CascadeType.ALL means: if author is saved/deleted, titleauthor rows follow
-    // -------------------------------------------------------
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TitleAuthor> titleAuthors;
 
-    // -------------------------------------------------------
-    // Constructors
-    // -------------------------------------------------------
     public Author() {
         // Default constructor required by JPA
     }
@@ -105,9 +74,6 @@ public class Author {
         this.contract = contract;
     }
 
-    // -------------------------------------------------------
-    // Getters and Setters (no Lombok — written manually)
-    // -------------------------------------------------------
     public String getAuId() { return auId; }
     public void setAuId(String auId) { this.auId = auId; }
 
