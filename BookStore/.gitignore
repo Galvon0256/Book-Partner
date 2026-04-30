@@ -1,27 +1,68 @@
-HELP.md
+# =============================================
+#   Book-Partner Spring Boot .gitignore
+#   Stack: Spring Boot · Maven · MySQL · Java 20
+# =============================================
+
+# ── Maven Build Output ─────────────────────────
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-/.mvn
-/.gitattributes
+.mvn/wrapper/maven-wrapper.jar
+.mvn/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
 
-### STS ###
+# ── Compiled Classes ───────────────────────────
+*.class
+
+# ── JAR / WAR Artifacts ────────────────────────
+*.jar
+*.war
+*.ear
+*.nar
+
+# ── Spring Boot ────────────────────────────────
+spring-shell.log
+HELP.md
+
+# ── Sensitive Config (DB credentials etc.) ─────
+# Keep base application.properties but ignore env-specific ones
+application-local.properties
+application-local.yml
+application-dev.properties
+application-prod.properties
+*.env
+.env
+
+# ── Logs ───────────────────────────────────────
+logs/
+*.log
+*.log.*
+
+# ── Eclipse / STS ──────────────────────────────
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
+/.gitattributes
 
-### IntelliJ IDEA ###
-.idea
+# ── IntelliJ IDEA ──────────────────────────────
+.idea/
 *.iws
 *.iml
 *.ipr
+out/
 
-### NetBeans ###
+# ── NetBeans ───────────────────────────────────
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -31,18 +72,20 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# ── VS Code ────────────────────────────────────
 .vscode/
 
-### Eclipse ###
-.classpath
-.project
-.settings/
-
-### metadata ###
-*.log
-*.tmp
-*.bak
-*.swp
+# ── OS Junk ────────────────────────────────────
 .DS_Store
-.metadata/
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── Database ───────────────────────────────────
+*.db
+*.sqlite
+*.h2.db
