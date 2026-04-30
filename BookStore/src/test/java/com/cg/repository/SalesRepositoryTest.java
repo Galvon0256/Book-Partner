@@ -3,12 +3,18 @@ package com.cg.repository;
 import com.cg.entity.Sales;
 import com.cg.entity.SalesId;
 import com.cg.entity.Store;
+
+import jakarta.transaction.Transactional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +22,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Transactional
+@ActiveProfiles("test")
 public class SalesRepositoryTest {
 
     @Autowired
@@ -27,27 +36,33 @@ public class SalesRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
+    @Autowired
+    private DiscountRepository discountRepository;
+
     // Sales requires Store FK — persist stores first
     @BeforeEach
-    void setup() {
+    void cleanUp() {
+        salesRepository.deleteAll();
+        entityManager.flush();
+        discountRepository.deleteAll();   // ← add this before storeRepository.deleteAll()
+        entityManager.flush();
+        storeRepository.deleteAll();
+        entityManager.flush();
+
+        // re-insert stores
         Store s1 = new Store();
-        s1.setStorId("6380");
-        s1.setStorName("Store One");
-        s1.setCity("Seattle");
-        s1.setState("WA");
-        s1.setZip("98101");
+        s1.setStorId("6380"); s1.setStorName("Store One");
+        s1.setCity("Seattle"); s1.setState("WA"); s1.setZip("98101");
         storeRepository.save(s1);
 
         Store s2 = new Store();
-        s2.setStorId("7066");
-        s2.setStorName("Store Two");
-        s2.setCity("Boston");
-        s2.setState("MA");
-        s2.setZip("02101");
+        s2.setStorId("7066"); s2.setStorName("Store Two");
+        s2.setCity("Boston"); s2.setState("MA"); s2.setZip("02101");
         storeRepository.save(s2);
 
         entityManager.flush();
     }
+
 
     private Sales buildSales(String storId, String ordNum, String titleId) {
         Sales sale = new Sales();
