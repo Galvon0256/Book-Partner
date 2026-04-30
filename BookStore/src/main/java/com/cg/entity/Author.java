@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Table(name = "authors")
 public class Author {
@@ -54,6 +56,7 @@ public class Author {
     @Min(value = 0, message = "Contract must be 0 or 1")
     @Max(value = 1, message = "Contract must be 0 or 1")
     private Integer contract;
+    @JsonIgnore
     @OneToMany(mappedBy = "author", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TitleAuthor> titleAuthors;
 

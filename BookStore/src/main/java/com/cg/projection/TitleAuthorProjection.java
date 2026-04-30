@@ -1,4 +1,4 @@
-package com.cg.projections;
+package com.cg.projection;
 import com.cg.entity.TitleAuthor    ;
 import org.springframework.data.rest.core.config.Projection;
 

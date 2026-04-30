@@ -5,7 +5,7 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 import com.cg.entity.TitleAuthor;
 import com.cg.entity.TitleAuthorId;
-import com.cg.projections.TitleAuthorProjection;
+import com.cg.projection.TitleAuthorProjection;
 
 import java.util.List;
 
