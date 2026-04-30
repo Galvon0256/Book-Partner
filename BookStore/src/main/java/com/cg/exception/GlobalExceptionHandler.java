@@ -7,6 +7,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -85,9 +86,15 @@ public class GlobalExceptionHandler {
     // Triggered when we throw ResourceNotFoundException manually
     // -------------------------------------------------------
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
-        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    public ResponseEntity<Map<String, Object>> handleResourceNotFound(
+            ResourceNotFoundException ex) {
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(buildErrorResponse(
+                        404,
+                        "Not Found",
+                        ex.getMessage()
+                ));
     }
 
     // -------------------------------------------------------
@@ -258,5 +265,42 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(400, "Invalid Title Data", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
     }
+    
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — jobId does not exist in the jobs table
+    // Thrown by the RepositoryEventHandler before save, so the FK
+    // violation never reaches the database layer.
+    // -------------------------------------------------------
+
+    
+    @ExceptionHandler(InvalidJobIdException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidJobId(InvalidJobIdException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+    
+    
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — pubId does not exist in the publishers table
+    // Thrown by the RepositoryEventHandler before save, so the FK
+    // violation never reaches the database layer.
+    // -------------------------------------------------------
+    @ExceptionHandler(InvalidPublisherIdException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidPublisherId(InvalidPublisherIdException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+    
+    // -------------------------------------------------------
+    // 404 NOT FOUND — Employee not found by emp_id
+    // Thrown by the RepositoryEventHandler or service layer when
+    // GET / PATCH targets an emp_id that does not exist.
+    // -------------------------------------------------------
+    @ExceptionHandler(EmployeeNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEmployeeNotFound(EmployeeNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+    
 
 }
