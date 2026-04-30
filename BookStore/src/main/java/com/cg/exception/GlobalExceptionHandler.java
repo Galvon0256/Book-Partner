@@ -1,5 +1,6 @@
 package com.cg.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -181,4 +182,19 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(409, "Conflict", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);   // 409
     }
+    
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDBException(DataIntegrityViolationException ex) {
+
+        return new ResponseEntity<>(
+            buildErrorResponse(
+                400,
+                "Bad Request",
+                "Invalid input: violates database constraints (duplicate or invalid foreign key)"
+            ),
+            HttpStatus.BAD_REQUEST
+        );
+    }
+   
+    
 }
