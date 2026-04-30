@@ -28,11 +28,11 @@ public class Store {
     private String city;
 
     @Size(max = 2, message = "State must be at most 2 characters")
-    @Column(name = "state", length = 2)
+    @Column(name = "state", columnDefinition = "CHAR(2)", length = 2)
     private String state;
 
     @Size(max = 5, message = "Zip must be at most 5 characters")
-    @Column(name = "zip", length = 5)
+    @Column(name = "zip", columnDefinition = "CHAR(5)", length = 5)
     private String zip;
 
     public String getStorId() { return storId; }

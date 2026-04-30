@@ -10,13 +10,7 @@ import java.math.BigDecimal;
 @Table(name = "discounts")
 public class Discount {
 
-    // discounts table has no PK in original pubs schema.
-    // DBA must run: ALTER TABLE discounts ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY FIRST;
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Integer id;
-
     @NotBlank(message = "Discount type is required")
     @Size(max = 40, message = "Discount type must be at most 40 characters")
     @Column(name = "discounttype", length = 40)
@@ -36,9 +30,6 @@ public class Discount {
     @NotNull(message = "Discount value is required")
     @Column(name = "discount", precision = 4, scale = 2)
     private BigDecimal discount;
-
-    public Integer getId() { return id; }
-    public void setId(Integer id) { this.id = id; }
 
     public String getDiscounttype() { return discounttype; }
     public void setDiscounttype(String discounttype) { this.discounttype = discounttype; }

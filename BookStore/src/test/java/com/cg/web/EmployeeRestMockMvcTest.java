@@ -1,4 +1,4 @@
-package com.cg.endpoint;
+package com.cg.web;
 
 import com.cg.entity.Employee;
 import com.cg.entity.Job;
