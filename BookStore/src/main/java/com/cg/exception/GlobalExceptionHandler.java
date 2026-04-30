@@ -3,10 +3,12 @@ package com.cg.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -91,6 +93,17 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------------------------------------------
+    // 404 NOT FOUND - Spring Data REST resource doesn't exist
+    // Triggered when repository endpoints cannot find a resource by ID
+    // -------------------------------------------------------
+    @ExceptionHandler(org.springframework.data.rest.webmvc.ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleDataRestNotFound(
+            org.springframework.data.rest.webmvc.ResourceNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", "The requested record was not found");
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
     // 404 NOT FOUND — No element found in Optional
     // -------------------------------------------------------
     @ExceptionHandler(NoSuchElementException.class)
@@ -108,6 +121,28 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(404, "Not Found",
                 "The URL '" + ex.getRequestURL() + "' does not exist");
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND - No static/resource handler found
+    // Triggered for unmapped repository routes after methods are hidden
+    // -------------------------------------------------------
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNoResource(NoResourceFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found",
+                "The requested URL does not exist");
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 405 METHOD NOT ALLOWED - HTTP method is not supported
+    // Triggered when Spring Data REST delete methods are not exported
+    // -------------------------------------------------------
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex) {
+        Map<String, Object> body = buildErrorResponse(405, "Method Not Allowed", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.METHOD_NOT_ALLOWED);   // 405
     }
 
     // -------------------------------------------------------

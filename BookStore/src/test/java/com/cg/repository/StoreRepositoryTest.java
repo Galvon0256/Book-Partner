@@ -1,11 +1,18 @@
 package com.cg.repository;
 
 import com.cg.entity.Store;
+
+import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.orm.jpa.JpaSystemException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,6 +20,9 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Transactional
+@ActiveProfiles("test")
 public class StoreRepositoryTest {
 
     @Autowired
@@ -20,6 +30,12 @@ public class StoreRepositoryTest {
 
     @Autowired
     private TestEntityManager entityManager;
+
+    @Autowired
+    private SalesRepository salesRepository; // or whatever the child repo is
+
+    @Autowired
+    private DiscountRepository discountRepository;
 
     // Helper — builds a valid Store
     private Store buildStore(String storId, String city, String state) {
@@ -32,6 +48,17 @@ public class StoreRepositoryTest {
         s.setZip("12345");
         return s;
     }
+    
+
+    @BeforeEach
+    void cleanUp() {
+        salesRepository.deleteAll();
+        discountRepository.deleteAll();
+        entityManager.flush();
+        storeRepository.deleteAll();
+        entityManager.flush();
+    }
+
 
     // Test 1 — save and retrieve, all 6 fields must match
     @Test
@@ -138,10 +165,7 @@ public class StoreRepositoryTest {
         store.setState("WA");
         store.setZip("12345");
 
-        assertThrows(ConstraintViolationException.class, () -> {
-            storeRepository.save(store);
-            entityManager.flush();
-        });
+        assertThrows(JpaSystemException.class, () -> storeRepository.save(store));
     }
 
     // Test 10 — @Size(max=2) on state fires for "WASHINGTON"

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -32,7 +33,9 @@ public class Sales {
 
     @NotNull(message = "Order date is required")
     @Column(name = "ord_date")
+    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime ordDate;
+
 
     @NotNull(message = "Quantity is required")
     @Min(value = 1, message = "Quantity must be at least 1")

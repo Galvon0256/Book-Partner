@@ -5,6 +5,7 @@ import com.cg.entity.SalesId;
 import com.cg.projection.SalesProjection;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.rest.core.annotation.RestResource;
 
@@ -20,8 +21,8 @@ import java.util.List;
 public interface SalesRepository extends PagingAndSortingRepository<Sales, SalesId>,
                                          CrudRepository<Sales, SalesId> {
 
-    List<Sales> findByStorId(String storId);
-    List<Sales> findByTitleId(String titleId);
+    List<Sales> findByStorId(@Param("storId") String storId);
+    List<Sales> findByTitleId(@Param("titleId") String titleId);
 
     @Override
     @RestResource(exported = false)
@@ -30,4 +31,16 @@ public interface SalesRepository extends PagingAndSortingRepository<Sales, Sales
     @Override
     @RestResource(exported = false)
     void delete(Sales entity);
+
+    @Override
+    @RestResource(exported = false)
+    void deleteAllById(Iterable<? extends SalesId> ids);
+
+    @Override
+    @RestResource(exported = false)
+    void deleteAll(Iterable<? extends Sales> entities);
+
+    @Override
+    @RestResource(exported = false)
+    void deleteAll();
 }
