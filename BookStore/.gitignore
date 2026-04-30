@@ -37,7 +37,6 @@ application-local.properties
 application-local.yml
 application-dev.properties
 application-prod.properties
-application-test.properties
 *.env
 .env
 
