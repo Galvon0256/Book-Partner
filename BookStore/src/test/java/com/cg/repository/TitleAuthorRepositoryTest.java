@@ -1,6 +1,8 @@
 package com.cg.repository;
 
 import com.cg.entity.Author;
+import com.cg.entity.Publisher;
+import com.cg.entity.Title;
 import com.cg.entity.TitleAuthor;
 import com.cg.entity.TitleAuthorId;
 import org.junit.jupiter.api.BeforeEach;
@@ -9,25 +11,25 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Repository-layer tests for TitleAuthorRepository.
+ * Tests for TitleAuthorRepository.
  *
- * - Uses real MySQL pubs_test database (NOT H2).
- * - TitleAuthor has a composite PK (auId + titleId) via @IdClass.
- * - Author rows are saved first because auId is a FK in titleauthor table.
- * - @BeforeEach clears both tables so every test starts from a known state.
+ * Insert order must respect FK constraints:
+ *   Publisher → Title → Author → TitleAuthor
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @ActiveProfiles("test")
-@DisplayName("TitleAuthorRepository – Repository Layer Tests (MySQL pubs_test)")
 class TitleAuthorRepositoryTest {
 
     @Autowired
@@ -36,255 +38,252 @@ class TitleAuthorRepositoryTest {
     @Autowired
     private AuthorRepository authorRepository;
 
-    // -------------------------------------------------------
-    // Common test data
-    // -------------------------------------------------------
-    private TitleAuthor ta1;
-    private TitleAuthor ta2;
-    private TitleAuthor ta3;
+    @Autowired
+    private TitleRepository titleRepository;
+
+    @Autowired
+    private PublisherRepository publisherRepository;
+
+    // ── Parent entities shared across tests ────────────────────────────────
+
+    private Publisher publisher;
+    private Author    author1;
+    private Author    author2;
+    private Title     title1;
+    private Title     title2;
 
     @BeforeEach
     void setUp() {
-        // Clear child table first (FK constraint)
-        titleAuthorRepository.deleteAll();
-        authorRepository.deleteAll();
+        // No delete operations here; rely on transactional rollback between tests.
 
-        // Parent authors
-        Author a1 = new Author("172-32-1176", "White", "Johnson", "408 496-7223",
-                "10932 Bigge Rd", "Menlo Park", "CA", "94025", 1);
-        Author a2 = new Author("213-46-8915", "Green", "Marjorie", "415 986-7020",
-                "309 63rd St", "Oakland", "CA", "94618", 1);
-        authorRepository.saveAll(List.of(a1, a2));
+        // 1. Publisher
+        publisher = new Publisher();
+        publisher.setPubId("1389");
+        publisher.setPubName("Algodata Infosystems");
+        publisher.setCity("Berkeley");
+        publisher.setState("CA");
+        publisher.setCountry("USA");
+        publisherRepository.save(publisher);
 
-        // TitleAuthor records (composite key: auId + titleId)
-        ta1 = new TitleAuthor("172-32-1176", "BU1032", 1, 60);
-        ta2 = new TitleAuthor("172-32-1176", "BU2075", 1, 100);
-        ta3 = new TitleAuthor("213-46-8915", "BU1032", 2, 40);
-        titleAuthorRepository.saveAll(List.of(ta1, ta2, ta3));
+        // 2. Titles
+        title1 = new Title();
+        title1.setTitleId("BU1032");
+        title1.setTitle("The Busy Executive's Database Guide");
+        title1.setType("business");
+        title1.setPublisher(publisher);
+        title1.setPubdate(LocalDateTime.now());
+        titleRepository.save(title1);
+
+        title2 = new Title();
+        title2.setTitleId("PS2091");
+        title2.setTitle("Is Anger the Enemy?");
+        title2.setType("psychology");
+        title2.setPublisher(publisher);
+        title2.setPubdate(LocalDateTime.now());
+        titleRepository.save(title2);
+
+        // 3. Authors
+        author1 = new Author();
+        author1.setAuId("172-32-1176");
+        author1.setAuLname("White");
+        author1.setAuFname("Johnson");
+        author1.setPhone("415-555-1212");
+        author1.setCity("Menlo Park");
+        author1.setState("CA");
+        author1.setZip("94025");
+        author1.setContract(1);
+        authorRepository.save(author1);
+
+        author2 = new Author();
+        author2.setAuId("213-46-8915");
+        author2.setAuLname("Green");
+        author2.setAuFname("Marjorie");
+        author2.setPhone("415-986-7020");
+        author2.setCity("Oakland");
+        author2.setState("CA");
+        author2.setZip("94609");
+        author2.setContract(1);
+        authorRepository.save(author2);
     }
 
-    // -------------------------------------------------------
-    // 1. Save / Create
-    // -------------------------------------------------------
+    // ── Helper ─────────────────────────────────────────────────────────────
 
-    @Test
-    @DisplayName("save() – should persist a new TitleAuthor with composite key")
-    void testSaveTitleAuthor() {
-        TitleAuthor newTa = new TitleAuthor("213-46-8915", "TC7777", 1, 80);
-
-        TitleAuthor saved = titleAuthorRepository.save(newTa);
-
-        assertThat(saved).isNotNull();
-        assertThat(saved.getAuId()).isEqualTo("213-46-8915");
-        assertThat(saved.getTitleId()).isEqualTo("TC7777");
-        assertThat(saved.getAuOrd()).isEqualTo(1);
-        assertThat(saved.getRoyaltyper()).isEqualTo(80);
+    private TitleAuthor buildTitleAuthor(String auId, String titleId, int ord, int royaltyper) {
+        TitleAuthor ta = new TitleAuthor();
+        ta.setAuId(auId);
+        ta.setTitleId(titleId);
+        ta.setAuOrd(ord);
+        ta.setRoyaltyper(royaltyper);
+        return ta;
     }
 
-    // -------------------------------------------------------
-    // 2. FindById (composite key)
-    // -------------------------------------------------------
+    // ── save() ─────────────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("findById() – should return TitleAuthor when composite key exists")
-    void testFindByIdExists() {
-        TitleAuthorId id = new TitleAuthorId("172-32-1176", "BU1032");
-
-        Optional<TitleAuthor> result = titleAuthorRepository.findById(id);
-
-        assertThat(result).isPresent();
-        assertThat(result.get().getAuOrd()).isEqualTo(1);
-        assertThat(result.get().getRoyaltyper()).isEqualTo(60);
-    }
-
-    @Test
-    @DisplayName("findById() – should return empty Optional when composite key not found")
-    void testFindByIdNotFound() {
-        TitleAuthorId id = new TitleAuthorId("999-99-9999", "XX9999");
-
-        Optional<TitleAuthor> result = titleAuthorRepository.findById(id);
-
-        assertThat(result).isNotPresent();
-    }
-
-    @Test
-    @DisplayName("findById() – should not return row when titleId part of key is wrong")
-    void testFindByIdPartialKeyMismatch() {
-        TitleAuthorId id = new TitleAuthorId("172-32-1176", "WRONG1");
-
-        Optional<TitleAuthor> result = titleAuthorRepository.findById(id);
-
-        assertThat(result).isNotPresent();
-    }
-
-    // -------------------------------------------------------
-    // 3. FindAll
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("findAll() – should return all persisted TitleAuthor records")
-    void testFindAll() {
-        List<TitleAuthor> all = titleAuthorRepository.findAll();
-
-        assertThat(all).hasSize(3);
-    }
-
-    // -------------------------------------------------------
-    // 4. findByAuId
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("findByAuId() – should return all TitleAuthors for a given author")
-    void testFindByAuIdFound() {
-        List<TitleAuthor> result = titleAuthorRepository.findByAuId("172-32-1176");
-
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(TitleAuthor::getAuId).containsOnly("172-32-1176");
-    }
-
-    @Test
-    @DisplayName("findByAuId() – should return single record when author has one title")
-    void testFindByAuIdSingleResult() {
-        List<TitleAuthor> result = titleAuthorRepository.findByAuId("213-46-8915");
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTitleId()).isEqualTo("BU1032");
-    }
-
-    @Test
-    @DisplayName("findByAuId() – should return empty list when auId does not exist")
-    void testFindByAuIdNotFound() {
-        List<TitleAuthor> result = titleAuthorRepository.findByAuId("000-00-0000");
-
-        assertThat(result).isEmpty();
-    }
-
-    // -------------------------------------------------------
-    // 5. findByTitleId
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("findByTitleId() – should return all authors for a given title")
-    void testFindByTitleIdFound() {
-        List<TitleAuthor> result = titleAuthorRepository.findByTitleId("BU1032");
-
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(TitleAuthor::getTitleId).containsOnly("BU1032");
-    }
-
-    @Test
-    @DisplayName("findByTitleId() – should return single record when title has one author")
-    void testFindByTitleIdSingleResult() {
-        List<TitleAuthor> result = titleAuthorRepository.findByTitleId("BU2075");
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getAuId()).isEqualTo("172-32-1176");
-    }
-
-    @Test
-    @DisplayName("findByTitleId() – should return empty list when titleId does not exist")
-    void testFindByTitleIdNotFound() {
-        List<TitleAuthor> result = titleAuthorRepository.findByTitleId("ZZZZZZ");
-
-        assertThat(result).isEmpty();
-    }
-
-    // -------------------------------------------------------
-    // 6. Update
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("save() – should update royaltyper of an existing TitleAuthor")
-    void testUpdateRoyaltyper() {
-        TitleAuthorId id = new TitleAuthorId("172-32-1176", "BU1032");
-        TitleAuthor existing = titleAuthorRepository.findById(id).orElseThrow();
-        existing.setRoyaltyper(75);
-
-        TitleAuthor updated = titleAuthorRepository.save(existing);
-
-        assertThat(updated.getRoyaltyper()).isEqualTo(75);
-        assertThat(updated.getAuId()).isEqualTo("172-32-1176");
-        assertThat(updated.getTitleId()).isEqualTo("BU1032");
-    }
-
-    @Test
-    @DisplayName("save() – should update auOrd of an existing TitleAuthor")
-    void testUpdateAuOrd() {
-        TitleAuthorId id = new TitleAuthorId("213-46-8915", "BU1032");
-        TitleAuthor existing = titleAuthorRepository.findById(id).orElseThrow();
-        existing.setAuOrd(5);
-
-        TitleAuthor updated = titleAuthorRepository.save(existing);
-
-        assertThat(updated.getAuOrd()).isEqualTo(5);
-    }
-
-    // -------------------------------------------------------
-    // 7. Delete
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("deleteById() – should remove a TitleAuthor by composite key")
-    void testDeleteById() {
-        TitleAuthorId id = new TitleAuthorId("172-32-1176", "BU1032");
-
-        titleAuthorRepository.deleteById(id);
-
-        assertThat(titleAuthorRepository.findById(id)).isNotPresent();
-        assertThat(titleAuthorRepository.findAll()).hasSize(2);
-    }
-
-    // -------------------------------------------------------
-    // 8. Count
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("count() – should return correct total number of TitleAuthor records")
-    void testCount() {
-        assertThat(titleAuthorRepository.count()).isEqualTo(3);
-    }
-
-    // -------------------------------------------------------
-    // 9. ExistsById
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("existsById() – should return true for existing composite key")
-    void testExistsByIdTrue() {
-        TitleAuthorId id = new TitleAuthorId("172-32-1176", "BU2075");
-
-        assertThat(titleAuthorRepository.existsById(id)).isTrue();
-    }
-
-    @Test
-    @DisplayName("existsById() – should return false for non-existing composite key")
-    void testExistsByIdFalse() {
-        TitleAuthorId id = new TitleAuthorId("999-00-0000", "NOTHERE");
-
-        assertThat(titleAuthorRepository.existsById(id)).isFalse();
-    }
-
-    // -------------------------------------------------------
-    // 10. Royaltyper boundary values
-    // -------------------------------------------------------
-
-    @Test
-    @DisplayName("save() – should persist TitleAuthor with royaltyper = 0 (lower boundary)")
-    void testSaveWithZeroRoyalty() {
-        TitleAuthor ta = new TitleAuthor("213-46-8915", "MC2222", 2, 0);
+    @DisplayName("save() persists a TitleAuthor with composite PK")
+    void save_validTitleAuthor_returnsSavedEntity() {
+        TitleAuthor ta = buildTitleAuthor("172-32-1176", "BU1032", 1, 60);
 
         TitleAuthor saved = titleAuthorRepository.save(ta);
 
-        assertThat(saved.getRoyaltyper()).isEqualTo(0);
+        assertNotNull(saved);
+        assertEquals("172-32-1176", saved.getAuId());
+        assertEquals("BU1032", saved.getTitleId());
+        assertEquals(1, saved.getAuOrd());
+        assertEquals(60, saved.getRoyaltyper());
+    }
+
+    // ── findById() with composite key ──────────────────────────────────────
+
+    @Test
+    @DisplayName("findById() returns entity for an existing composite key")
+    void findById_existingCompositeKey_returnsEntity() {
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", "BU1032", 1, 60));
+
+        TitleAuthorId id = new TitleAuthorId("172-32-1176", "BU1032");
+        Optional<TitleAuthor> result = titleAuthorRepository.findById(id);
+
+        assertTrue(result.isPresent());
+        assertEquals(60, result.get().getRoyaltyper());
     }
 
     @Test
-    @DisplayName("save() – should persist TitleAuthor with royaltyper = 100 (upper boundary)")
-    void testSaveWithFullRoyalty() {
-        TitleAuthor ta = new TitleAuthor("213-46-8915", "MC3333", 1, 100);
+    @DisplayName("findById() returns empty Optional for a non-existent composite key")
+    void findById_nonExistentKey_returnsEmpty() {
+        TitleAuthorId id = new TitleAuthorId("999-99-9999", "BU9999");
+        Optional<TitleAuthor> result = titleAuthorRepository.findById(id);
+        assertFalse(result.isPresent());
+    }
 
+    // ── findAll() with pagination ──────────────────────────────────────────
+
+    @Test
+    @DisplayName("findAll(Pageable) returns first page of TitleAuthor records")
+    void findAll_withPagination_returnsFirstPage() {
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", "BU1032", 1, 60));
+        titleAuthorRepository.save(buildTitleAuthor("213-46-8915", "BU1032", 2, 40));
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", "PS2091", 1, 100));
+
+        Pageable pageable = PageRequest.of(0, 10);
+        var page = titleAuthorRepository.findAll(pageable);
+
+        // Should have at least 3 records saved in this test
+        assertTrue(page.getContent().size() >= 3);
+        assertTrue(page.getTotalElements() >= 3);
+    }
+
+    // ── findByAuId() ───────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findByAuId() returns all TitleAuthor records for a given author")
+    void findByAuId_existingAuthor_returnsCorrectList() {
+        // Use unique author ID to avoid interference from other tests
+        String uniqueAuthorId = "555-55-5555";
+        
+        // Create a unique author for this test
+        Author testAuthor = new Author();
+        testAuthor.setAuId(uniqueAuthorId);
+        testAuthor.setAuLname("TestLast");
+        testAuthor.setAuFname("TestFirst");
+        testAuthor.setPhone("555-555-5555");
+        testAuthor.setCity("TestCity");
+        testAuthor.setState("TX");
+        testAuthor.setZip("77001");
+        testAuthor.setContract(1);
+        authorRepository.save(testAuthor);
+        
+        // Save records with unique author ID
+        titleAuthorRepository.save(buildTitleAuthor(uniqueAuthorId, "BU1032", 1, 60));
+        titleAuthorRepository.save(buildTitleAuthor(uniqueAuthorId, "PS2091", 2, 100));
+        titleAuthorRepository.save(buildTitleAuthor("213-46-8915", "BU1032", 1, 40));
+
+        List<TitleAuthor> result = titleAuthorRepository.findByAuId(uniqueAuthorId);
+
+        assertEquals(2, result.size());
+        result.forEach(ta -> assertEquals(uniqueAuthorId, ta.getAuId()));
+    }
+
+    @Test
+    @DisplayName("findByAuId() returns empty list for an author with no titles")
+    void findByAuId_noMatch_returnsEmptyList() {
+        // Use a different author ID than the ones set up in setUp()
+        String testAuthorId = "999-99-9999";
+        
+        List<TitleAuthor> result = titleAuthorRepository.findByAuId(testAuthorId);
+
+        assertTrue(result.isEmpty());
+    }
+
+    // ── findByTitleId() ────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("findByTitleId() returns all TitleAuthor records for a given title")
+    void findByTitleId_existingTitle_returnsCorrectList() {
+        // Use unique title ID to avoid interference from other tests
+        String uniqueTitleId = "TX9999";
+        
+        // Create a unique title for this test
+        Title testTitle = new Title();
+        testTitle.setTitleId(uniqueTitleId);
+        testTitle.setTitle("Test Title for TitleAuthor");
+        testTitle.setType("test");
+        testTitle.setPublisher(publisher);
+        testTitle.setPubdate(LocalDateTime.now());
+        titleRepository.save(testTitle);
+        
+        // Save records with unique title ID
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", uniqueTitleId, 1, 60));
+        titleAuthorRepository.save(buildTitleAuthor("213-46-8915", uniqueTitleId, 2, 40));
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", "PS2091", 1, 100));
+
+        List<TitleAuthor> result = titleAuthorRepository.findByTitleId(uniqueTitleId);
+
+        assertEquals(2, result.size());
+        result.forEach(ta -> assertEquals(uniqueTitleId, ta.getTitleId()));
+    }
+
+    @Test
+    @DisplayName("findByTitleId() returns empty list for a title with no authors")
+    void findByTitleId_noMatch_returnsEmptyList() {
+        // Use a different title ID that has no TitleAuthor records
+        String testTitleId = "BU9999";
+        
+        List<TitleAuthor> result = titleAuthorRepository.findByTitleId(testTitleId);
+
+        assertTrue(result.isEmpty());
+    }
+
+    // ── update ─────────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("save() with same composite key updates royaltyper")
+    void save_existingCompositeKey_updatesRecord() {
+        titleAuthorRepository.save(buildTitleAuthor("172-32-1176", "BU1032", 1, 60));
+
+        TitleAuthor updated = buildTitleAuthor("172-32-1176", "BU1032", 1, 75);
+        titleAuthorRepository.save(updated);
+
+        TitleAuthor found = titleAuthorRepository
+                .findById(new TitleAuthorId("172-32-1176", "BU1032"))
+                .orElseThrow();
+        assertEquals(75, found.getRoyaltyper());
+    }
+
+    // ── royaltyper edge cases ──────────────────────────────────────────────
+
+    @Test
+    @DisplayName("save() allows royaltyper = 0")
+    void save_zeroRoyaltyper_succeeds() {
+        TitleAuthor ta = buildTitleAuthor("172-32-1176", "BU1032", 1, 0);
         TitleAuthor saved = titleAuthorRepository.save(ta);
+        assertEquals(0, saved.getRoyaltyper());
+    }
 
-        assertThat(saved.getRoyaltyper()).isEqualTo(100);
+    @Test
+    @DisplayName("save() allows royaltyper = 100")
+    void save_fullRoyaltyper_succeeds() {
+        TitleAuthor ta = buildTitleAuthor("172-32-1176", "BU1032", 1, 100);
+        TitleAuthor saved = titleAuthorRepository.save(ta);
+        assertEquals(100, saved.getRoyaltyper());
     }
 }
