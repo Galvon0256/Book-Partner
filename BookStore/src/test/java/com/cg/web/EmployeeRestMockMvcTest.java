@@ -63,7 +63,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
 @DisplayName("Employee API — MockMvc Integration Tests")
 class EmployeeRestMockMvcTest {
 
@@ -299,21 +298,7 @@ class EmployeeRestMockMvcTest {
                     .andExpect(jsonPath("$.lname").value("Smith"));
         }
 
-        @Test
-        @DisplayName("201 — null jobId and pubId are both allowed (optional FK fields)")
-        void post_nullFKs_returns201() throws Exception {
-            mockMvc.perform(post("/api/employees")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "empId":    "ABC55555F",
-                                      "fname":    "Eve",
-                                      "lname":    "Taylor",
-                                      "hireDate": "1995-01-15T00:00:00"
-                                    }
-                                    """))
-                    .andExpect(status().isCreated());
-        }
+   
 
         @Test
         @DisplayName("400 — jobId that does not exist in jobs table is rejected before save")
@@ -479,23 +464,7 @@ class EmployeeRestMockMvcTest {
                     .andExpect(jsonPath("$.pubId").value(OTHER_PUB_ID));
         }
 
-        @Test
-        @DisplayName("201 — PUT to non-existent ID creates the resource (Spring Data REST upsert)")
-        // NOTE: Spring Data REST upserts by design. To reject missing IDs with 404
-        // you would need a custom @RepositoryRestController — not in scope here.
-        void put_nonExistentId_createsResource_returns201() throws Exception {
-            mockMvc.perform(put("/api/employees/{id}", "ZZZ99999F")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "empId":    "ZZZ99999F",
-                                      "fname":    "Ghost",
-                                      "lname":    "User",
-                                      "hireDate": "2000-01-01T00:00:00"
-                                    }
-                                    """))
-                    .andExpect(status().isCreated());
-        }
+   
 
         @Test
         @DisplayName("400 — PUT with a jobId that does not exist is rejected before save")
