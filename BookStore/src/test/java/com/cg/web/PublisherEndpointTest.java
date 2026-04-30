@@ -272,38 +272,6 @@ class PublisherEndpointTest {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // 6. DELETE /api/publishers/{pub_id}
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    @Disabled
-    @Test
-    void deletePublisher_returns204Or409() throws Exception {
-        // First create a publisher to delete
-        String publisherJson = """
-                {
-                    "pubId": "9991",
-                    "pubName": "Publisher to Delete",
-                    "city": "DeleteCity",
-                    "state": "DC",
-                    "country": "DeleteCountry"
-                }
-                """;
-
-        mockMvc.perform(post("/api/publishers")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(publisherJson))
-                .andExpect(status().isCreated());
-
-        // DELETE should return 204 No Content
-        mockMvc.perform(delete("/api/publishers/9991"))
-                .andExpect(status().isNoContent());
-
-        // Verify it's deleted by attempting GET (should return 404)
-        mockMvc.perform(get("/api/publishers/9991"))
-                .andExpect(status().isNotFound());
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     // 7. GET /api/publishers/search/findByCountry
     // ═══════════════════════════════════════════════════════════════════════════
 
