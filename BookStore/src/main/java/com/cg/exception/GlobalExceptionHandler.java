@@ -183,6 +183,18 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);   // 409
     }
     
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDBException(DataIntegrityViolationException ex) {
+
+        return new ResponseEntity<>(
+            buildErrorResponse(
+                400,
+                "Bad Request",
+                "Invalid input: violates database constraints (duplicate or invalid foreign key)"
+            ),
+            HttpStatus.BAD_REQUEST
+        );
+    }
    
     
 }
