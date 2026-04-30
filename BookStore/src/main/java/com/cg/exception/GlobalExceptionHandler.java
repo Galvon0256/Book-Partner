@@ -195,6 +195,68 @@ public class GlobalExceptionHandler {
             HttpStatus.BAD_REQUEST
         );
     }
-   
-    
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND — Title not found by ID
+    // -------------------------------------------------------
+    @ExceptionHandler(TitleNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleTitleNotFound(TitleNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND — Royalty schedule not found for a title
+    // -------------------------------------------------------
+    @ExceptionHandler(RoySchedNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRoySchedNotFound(RoySchedNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND — Store not found by ID
+    // -------------------------------------------------------
+    @ExceptionHandler(StoreNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleStoreNotFound(StoreNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND — No discounts found for a store
+    // -------------------------------------------------------
+    @ExceptionHandler(DiscountNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleDiscountNotFound(DiscountNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 404 NOT FOUND — No sales records found
+    // -------------------------------------------------------
+    @ExceptionHandler(SalesNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSalesNotFound(SalesNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — Invalid store data
+    // -------------------------------------------------------
+    @ExceptionHandler(InvalidStoreDataException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidStoreData(InvalidStoreDataException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Invalid Store Data", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — Invalid title data
+    // -------------------------------------------------------
+    @ExceptionHandler(InvalidTitleDataException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidTitleData(InvalidTitleDataException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Invalid Title Data", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
+    }
+
 }
