@@ -87,9 +87,9 @@ public class SalesRepositoryTest {
     @Test
     void testFindByIdStorId_returnsOnlyThatStore() {
         salesRepository.save(buildSales("6380", "ORD001", "BU1032"));
-        salesRepository.save(buildSales("6380", "ORD002", "BU1033"));
-        salesRepository.save(buildSales("6380", "ORD003", "BU1034"));
-        salesRepository.save(buildSales("7066", "ORD004", "BU1035"));
+        salesRepository.save(buildSales("6380", "ORD002", "PS2091"));
+        salesRepository.save(buildSales("6380", "ORD003", "MC3021"));
+        salesRepository.save(buildSales("7066", "ORD004", "PC1035"));
         entityManager.flush();
 
         List<Sales> result = salesRepository.findByStorId("6380");

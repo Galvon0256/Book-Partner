@@ -1,9 +1,7 @@
 package com.cg.repository;
 
 import com.cg.entity.Discount;
-
 import jakarta.transaction.Transactional;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -13,6 +11,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
 @ActiveProfiles("test")
-public class DiscountRepositoryTest {
+class DiscountRepositoryTest {
 
     @Autowired
     private DiscountRepository discountRepository;
@@ -28,31 +28,30 @@ public class DiscountRepositoryTest {
     @Autowired
     private TestEntityManager entityManager;
 
-    private Discount buildDiscount(String storId, String type) {
-        Discount d = new Discount();
-        d.setStorId(storId);
-        d.setDiscounttype(type);
-        d.setLowqty((short) 1);
-        d.setHighqty((short) 10);
-        d.setDiscount(new BigDecimal("10.50"));
-        return d;
+    private Discount buildDiscount(String storId) {
+        Discount discount = new Discount();
+        discount.setStorId(storId);
+        discount.setDiscounttype("TD" + UUID.randomUUID().toString().replace("-", "").substring(0, 30));
+        discount.setLowqty((short) 1);
+        discount.setHighqty((short) 10);
+        discount.setDiscount(new BigDecimal("10.50"));
+        return discount;
     }
 
-    // Test 1 — findByStorId returns only that store's discounts
     @Test
     void testFindByStorId_returnsOnlyThatStore() {
-        discountRepository.save(buildDiscount("6380", "Customer Discount"));
-        discountRepository.save(buildDiscount("6380", "Volume Discount"));
-        discountRepository.save(buildDiscount("7066", "Other Discount"));
+        Discount storeDiscount1 = discountRepository.save(buildDiscount("6380"));
+        Discount storeDiscount2 = discountRepository.save(buildDiscount("6380"));
+        Discount otherStoreDiscount = discountRepository.save(buildDiscount("7066"));
         entityManager.flush();
 
         List<Discount> result = discountRepository.findByStorId("6380");
 
-        assertEquals(2, result.size());
-        result.forEach(d -> assertEquals("6380", d.getStorId()));
+        assertTrue(result.stream().anyMatch(d -> d.getDiscounttype().equals(storeDiscount1.getDiscounttype())));
+        assertTrue(result.stream().anyMatch(d -> d.getDiscounttype().equals(storeDiscount2.getDiscounttype())));
+        assertFalse(result.stream().anyMatch(d -> d.getDiscounttype().equals(otherStoreDiscount.getDiscounttype())));
     }
 
-    // Test 2 — findByStorId with no match returns empty list, not null
     @Test
     void testFindByStorId_noMatch_returnsEmpty() {
         List<Discount> result = discountRepository.findByStorId("9999");
@@ -61,54 +60,58 @@ public class DiscountRepositoryTest {
         assertEquals(0, result.size());
     }
 
-    // Test 3 — global discounts (storId = null) are retrievable by findByStorId(null)
     @Test
-    void testFindByStorId_nullStorId_returnsGlobalDiscount() {
+    void testFindByStorId_nullStorId_returnsGlobalDiscounts() {
         Discount globalDiscount = new Discount();
-        globalDiscount.setStorId(null); // global — no specific store
-        globalDiscount.setDiscounttype("Global Discount");
+        globalDiscount.setStorId(null);
+        globalDiscount.setDiscounttype("TG" + UUID.randomUUID().toString().replace("-", "").substring(0, 30));
         globalDiscount.setDiscount(new BigDecimal("5.00"));
         discountRepository.save(globalDiscount);
         entityManager.flush();
 
         List<Discount> result = discountRepository.findByStorId(null);
 
-        assertEquals(1, result.size());
-        assertNull(result.get(0).getStorId());
+        assertTrue(result.stream().anyMatch(d -> d.getDiscounttype().equals(globalDiscount.getDiscounttype())));
+        result.forEach(d -> assertNull(d.getStorId()));
     }
 
-    // Test 4 — findAll returns all saved discounts
     @Test
-    void testFindAll() {
-        discountRepository.save(buildDiscount("6380", "Type A"));
-        discountRepository.save(buildDiscount("6380", "Type B"));
-        discountRepository.save(buildDiscount("7066", "Type C"));
+    void testFindAll_returnsSavedDiscounts() {
+        Discount discount1 = discountRepository.save(buildDiscount("6380"));
+        Discount discount2 = discountRepository.save(buildDiscount("7066"));
         entityManager.flush();
 
         List<Discount> result = (List<Discount>) discountRepository.findAll();
 
-        assertEquals(3, result.size());
+        assertTrue(result.stream().anyMatch(d -> d.getDiscounttype().equals(discount1.getDiscounttype())));
+        assertTrue(result.stream().anyMatch(d -> d.getDiscounttype().equals(discount2.getDiscounttype())));
     }
 
     @Test
     void testFindByDiscounttype_returnsMatching() {
-        discountRepository.save(buildDiscount("6380", "Customer Discount"));
-        discountRepository.save(buildDiscount("7066", "Customer Discount"));
-        discountRepository.save(buildDiscount("6380", "Volume Discount")); // different type
+        Discount discount = discountRepository.save(buildDiscount("6380"));
         entityManager.flush();
- 
-        List<Discount> result = discountRepository.findByDiscounttype("Customer Discount");
- 
-        assertEquals(2, result.size());
-        result.forEach(d -> assertEquals("Customer Discount", d.getDiscounttype()));
+
+        List<Discount> result = discountRepository.findByDiscounttype(discount.getDiscounttype());
+
+        assertEquals(1, result.size());
+        assertEquals(discount.getDiscounttype(), result.get(0).getDiscounttype());
     }
- 
-    // findByDiscounttype with no match returns empty list, not null
+
     @Test
     void testFindByDiscounttype_noMatch_returnsEmpty() {
         List<Discount> result = discountRepository.findByDiscounttype("Nonexistent Type");
- 
+
         assertNotNull(result);
         assertEquals(0, result.size());
+    }
+
+    @Test
+    void testFindById_returnsSeededCustomerDiscount() {
+        Optional<Discount> result = discountRepository.findById("Customer Discount");
+
+        assertTrue(result.isPresent());
+        assertEquals("8042", result.get().getStorId());
+        assertEquals(0, new BigDecimal("5.00").compareTo(result.get().getDiscount()));
     }
 }

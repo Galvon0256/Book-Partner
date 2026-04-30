@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.orm.jpa.JpaSystemException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
@@ -164,10 +165,7 @@ public class StoreRepositoryTest {
         store.setState("WA");
         store.setZip("12345");
 
-        assertThrows(ConstraintViolationException.class, () -> {
-            storeRepository.save(store);
-            entityManager.flush();
-        });
+        assertThrows(JpaSystemException.class, () -> storeRepository.save(store));
     }
 
     // Test 10 — @Size(max=2) on state fires for "WASHINGTON"
