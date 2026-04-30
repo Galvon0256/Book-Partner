@@ -23,7 +23,8 @@ public class RoySched {
     private Integer roySchedId;
 
     // Plain String column — this is what you send in POST body
-
+    @Column(name = "title_id", columnDefinition = "CHAR(10)")
+    private String titleId;
 
     // Relationship for JPA joins only — completely hidden from REST and JSON
     @ManyToOne(fetch = FetchType.LAZY)
@@ -50,6 +51,7 @@ public class RoySched {
     public Integer getLorange() { return lorange; }
     public Integer getHirange() { return hirange; }
     public Integer getRoyalty() { return royalty; }
+    public String getTitleId() { return titleId; }
 
     // ── Setters ──────────────────────────────────────────────────
 
@@ -59,4 +61,5 @@ public class RoySched {
     public void setLorange(Integer lorange) { this.lorange = lorange; }
     public void setHirange(Integer hirange) { this.hirange = hirange; }
     public void setRoyalty(Integer royalty) { this.royalty = royalty; }
+    public void setTitleId(String titleId) { this.titleId = titleId; }
 }
