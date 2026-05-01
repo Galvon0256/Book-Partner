@@ -402,6 +402,12 @@ public class GlobalExceptionHandler {
             "Invalid JSON: please check your request body for missing or malformed values");
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
+    
+    @ExceptionHandler(InvalidJobLevelException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidJobLevel(InvalidJobLevelException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
 
 
 }

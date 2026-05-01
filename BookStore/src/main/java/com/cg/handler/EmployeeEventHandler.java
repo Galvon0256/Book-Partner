@@ -4,6 +4,7 @@ import com.cg.entity.Employee;
 import com.cg.exception.DuplicateResourceException;
 import com.cg.exception.EmployeeNotFoundException;
 import com.cg.exception.InvalidJobIdException;
+import com.cg.exception.InvalidJobLevelException;
 import com.cg.exception.InvalidPublisherIdException;
 import com.cg.repository.EmployeeRepository;
 import com.cg.repository.JobRepository;
@@ -54,11 +55,19 @@ public class EmployeeEventHandler {
     // POST /api/employees
     // Validate FKs before the new record is inserted.
     // -------------------------------------------------------
+    
     @HandleBeforeCreate
-    public void handleBeforeCreate(Employee employee) {
+    public void handleBeforeCreateDuplicacy(Employee employee) {
+        // Add this check first
+        if (employeeRepository.existsById(employee.getEmpId())) {
+            throw new DuplicateResourceException(
+                "Employee with ID '" + employee.getEmpId() + "' already exists");
+        }
         validateJobId(employee);
         validatePubId(employee);
+        validateJobLevel(employee);
     }
+      
 
     // -------------------------------------------------------
     // PUT /api/employees/{id}  and  PATCH /api/employees/{id}
@@ -76,6 +85,7 @@ public class EmployeeEventHandler {
 
         validateJobId(employee);
         validatePubId(employee);
+        validateJobLevel(employee);
     }
 
     // -------------------------------------------------------
@@ -93,6 +103,12 @@ public class EmployeeEventHandler {
         if (!jobRepository.existsById(employee.getJobId())) {
             throw new InvalidJobIdException("Job not found with id: " + employee.getJobId());
         }
+        
+        if(employee.getJobId()<=0) {
+        	 throw new InvalidJobIdException("Job ID cannot be negative or 0");
+        }
+        
+        
     }
 
     /**
@@ -103,22 +119,34 @@ public class EmployeeEventHandler {
         if (employee.getPubId() == null) {
             throw new InvalidPublisherIdException("Publisher ID must not be null");
         }
+        
+        if(employee.getPubId()==""){
+        	throw new InvalidPublisherIdException("Publisher ID should not be empty. Make sure it is a four digit number in string format ");
+        	
+        }
         if (!publisherRepository.existsById(employee.getPubId())) {
             throw new InvalidPublisherIdException("Publisher not found with id: " + employee.getPubId());
         }
+        
+       
     }
     
-    
-    @HandleBeforeCreate
-    public void handleBeforeCreateDuplicacy(Employee employee) {
-        // Add this check first
-        if (employeeRepository.existsById(employee.getEmpId())) {
-            throw new DuplicateResourceException(
-                "Employee with ID '" + employee.getEmpId() + "' already exists");
-        }
-        validateJobId(employee);
-        validatePubId(employee);
+    private void validateJobLevel(Employee employee) {
+        if (employee.getJobLvl() == null) return; // jobLvl is optional, skip if not provided
+
+        if (employee.getJobId() == null) return; // jobId null already caught by validateJobId
+
+        jobRepository.findById(employee.getJobId()).ifPresent(job -> {
+            if (employee.getJobLvl() < job.getMinLvl() || employee.getJobLvl() > job.getMaxLvl()) {
+                throw new InvalidJobLevelException(
+                    "Job level " + employee.getJobLvl() +
+                    " is out of range for this job. Must be between " +
+                    job.getMinLvl() + " and " + job.getMaxLvl()
+                );
+            }
+        });
     }
     
+
     
 }

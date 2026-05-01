@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -28,7 +29,7 @@ public class Employee {
 		)
 	private String empId;
 
-    @NotNull
+    @NotBlank
     @Size(max = 20)
     @Column(name = "fname", length = 20, nullable = false)
     private String fname;
@@ -36,7 +37,8 @@ public class Employee {
     @Size(max = 1)
     @Column(name = "minit", length = 1)
     private String minit;
-    @NotNull
+    
+    @NotBlank
     @Size(max = 30)
     @Column(name = "lname", length = 30, nullable = false)
     private String lname;
@@ -53,9 +55,11 @@ public class Employee {
     @JoinColumn(name = "job_id", insertable = false, updatable = false)
     private Job job;
 
+    
     @Column(name = "job_lvl")
     private Integer jobLvl;
     
+    @NotBlank
     @Column(name = "pub_id", columnDefinition = "char(4)")
     private String pubId;
 
