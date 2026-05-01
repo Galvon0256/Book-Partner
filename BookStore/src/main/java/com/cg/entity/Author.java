@@ -29,10 +29,10 @@ public class Author {
     @Size(max = 20, message = "First name must not exceed 20 characters")
     private String auFname;
 
-    @Column(name = "phone", length = 12, nullable = false)
+    @Column(name = "phone", length = 10, nullable = false)
     @NotBlank(message = "Phone is required")
-    @Size(max = 12, message = "Phone must not exceed 12 characters")
-    private String phone = "UNKNOWN";
+    @Size(max = 10, message = "Phone must not exceed 10 characters")
+    private String phone;
 
     @Column(name = "address", length = 40)
     private String address;
@@ -40,15 +40,16 @@ public class Author {
     @Column(name = "city", length = 20)
     private String city;
 
-    @Column(name = "state", length = 2)
-    @Size(max = 2, message = "State must be a 2-character code (e.g., CA)")
+    @Column(name = "state", length = 50)
+    @NotBlank(message = "State is required")
+    @Size(max = 50, message = "State name too long")
     private String state;
 
-    @Column(name = "zip", length = 5)
+    @Column(name = "zip", length = 6)
     @Pattern(
-        regexp = "^[0-9]{5}$",
-        message = "Zip code must be exactly 5 digits"
-    )
+    regexp = "^[1-9][0-9]{5}$",
+    message = "PIN code must be exactly 6 digits and cannot start with 0"
+)
     private String zip;
 
     @Column(name = "contract", nullable = false)
