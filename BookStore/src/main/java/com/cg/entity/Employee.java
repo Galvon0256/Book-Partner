@@ -42,10 +42,12 @@ public class Employee {
     private String lname;
 
  // raw FK field (used for insert/update)
+    @NotNull
     @Column(name = "job_id")
     private Short jobId;
     // relationship (used for fetch only)
     
+
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_id", insertable = false, updatable = false)

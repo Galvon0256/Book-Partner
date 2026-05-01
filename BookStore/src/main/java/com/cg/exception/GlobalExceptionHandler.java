@@ -3,11 +3,13 @@ package com.cg.exception;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import com.fasterxml.jackson.core.JsonParseException;
 
 
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -337,6 +339,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleEmployeeNotFound(EmployeeNotFoundException ex) {
         Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
+    }
+    
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidJson(HttpMessageNotReadableException ex) {
+        Map<String, Object> body = buildErrorResponse(400, "Bad Request", 
+            "Invalid JSON: please check your request body for missing or malformed values");
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
     
 

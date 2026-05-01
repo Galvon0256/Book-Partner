@@ -1,6 +1,7 @@
 package com.cg.handler;
 
 import com.cg.entity.Employee;
+import com.cg.exception.DuplicateResourceException;
 import com.cg.exception.EmployeeNotFoundException;
 import com.cg.exception.InvalidJobIdException;
 import com.cg.exception.InvalidPublisherIdException;
@@ -86,10 +87,11 @@ public class EmployeeEventHandler {
      * Throws InvalidJobIdException (→ 400 Bad Request) if not found.
      */
     private void validateJobId(Employee employee) {
-        if (employee.getJobId() != null &&
-                !jobRepository.existsById(employee.getJobId())) {
-            throw new InvalidJobIdException(
-                    "Job not found with id: " + employee.getJobId());
+        if (employee.getJobId() == null) {
+            throw new InvalidJobIdException("Job ID must not be null");
+        }
+        if (!jobRepository.existsById(employee.getJobId())) {
+            throw new InvalidJobIdException("Job not found with id: " + employee.getJobId());
         }
     }
 
@@ -98,10 +100,25 @@ public class EmployeeEventHandler {
      * Throws InvalidPublisherIdException (→ 400 Bad Request) if not found.
      */
     private void validatePubId(Employee employee) {
-        if (employee.getPubId() != null &&
-                !publisherRepository.existsById(employee.getPubId())) {
-            throw new InvalidPublisherIdException(
-                    "Publisher not found with id: " + employee.getPubId());
+        if (employee.getPubId() == null) {
+            throw new InvalidPublisherIdException("Publisher ID must not be null");
+        }
+        if (!publisherRepository.existsById(employee.getPubId())) {
+            throw new InvalidPublisherIdException("Publisher not found with id: " + employee.getPubId());
         }
     }
+    
+    
+    @HandleBeforeCreate
+    public void handleBeforeCreateDuplicacy(Employee employee) {
+        // Add this check first
+        if (employeeRepository.existsById(employee.getEmpId())) {
+            throw new DuplicateResourceException(
+                "Employee with ID '" + employee.getEmpId() + "' already exists");
+        }
+        validateJobId(employee);
+        validatePubId(employee);
+    }
+    
+    
 }
