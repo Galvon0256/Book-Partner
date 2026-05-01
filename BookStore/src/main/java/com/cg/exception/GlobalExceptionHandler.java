@@ -1,6 +1,7 @@
 package com.cg.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.rest.core.RepositoryConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
@@ -8,10 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.NoHandlerFoundException;
-
-
 import org.springframework.web.servlet.resource.NoResourceFoundException;
-
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -68,6 +66,52 @@ public class GlobalExceptionHandler {
     }
 
     // -------------------------------------------------------
+    // 400 BAD REQUEST — Jakarta validation constraint violation
+    // Triggered by Spring Data REST validation when @NotBlank, @Size, @Pattern etc. fail
+    // -------------------------------------------------------
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
+            jakarta.validation.ConstraintViolationException ex) {
+
+        List<String> errors = ex.getConstraintViolations()
+                .stream()
+                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+                .collect(Collectors.toList());
+
+        Map<String, Object> body = buildErrorResponse(400, "Validation Failed", "One or more fields are invalid");
+        body.put("validationErrors", errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // -------------------------------------------------------
+    // 400 BAD REQUEST — Spring Data REST repository constraint violation
+    // Triggered when Spring Data REST validation fails on entity creation/update
+    // -------------------------------------------------------
+    @ExceptionHandler(RepositoryConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleRepositoryConstraintViolation(
+            RepositoryConstraintViolationException ex) {
+
+        List<String> errors = ex.getErrors()
+                .getFieldErrors()
+                .stream()
+                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
+                .collect(Collectors.toList());
+
+        // If no field errors, check for global errors
+        if (errors.isEmpty()) {
+            errors = ex.getErrors()
+                    .getGlobalErrors()
+                    .stream()
+                    .map(error -> error.getDefaultMessage())
+                    .collect(Collectors.toList());
+        }
+
+        Map<String, Object> body = buildErrorResponse(400, "Validation Failed", "One or more fields are invalid");
+        body.put("validationErrors", errors);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    // -------------------------------------------------------
     // 400 BAD REQUEST — Illegal argument passed
     // -------------------------------------------------------
     @ExceptionHandler(IllegalArgumentException.class)
@@ -90,15 +134,9 @@ public class GlobalExceptionHandler {
     // Triggered when we throw ResourceNotFoundException manually
     // -------------------------------------------------------
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleResourceNotFound(
-            ResourceNotFoundException ex) {
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(buildErrorResponse(
-                        404,
-                        "Not Found",
-                        ex.getMessage()
-                ));
+    public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
+        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
+        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
     }
 
     // -------------------------------------------------------
@@ -176,21 +214,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.HTTP_VERSION_NOT_SUPPORTED);   // 505
     }
 
-    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
-    public ResponseEntity<Map<String, Object>> handleConstraintViolation(
-            jakarta.validation.ConstraintViolationException ex) {
-
-        List<String> errors = ex.getConstraintViolations()
-                .stream()
-                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
-                .collect(Collectors.toList());
-
-        Map<String, Object> body = buildErrorResponse(400, "Validation Failed", "One or more fields are invalid");
-        body.put("validationErrors", errors);
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
-    }
-    // Add these handlers in the proper order (between 400 and 401 sections)
-
     // -------------------------------------------------------
     // 400 BAD REQUEST — Invalid request data
     // -------------------------------------------------------
@@ -229,15 +252,45 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDBException(DataIntegrityViolationException ex) {
+        String message = "Invalid input: violates database constraints";
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        String errorType = "Bad Request";
 
-        return new ResponseEntity<>(
-            buildErrorResponse(
-                400,
-                "Bad Request",
-                "Invalid input: violates database constraints (duplicate or invalid foreign key)"
-            ),
-            HttpStatus.BAD_REQUEST
-        );
+        // Check the cause to determine the type of constraint violation
+        Throwable cause = ex.getCause();
+        if (cause != null) {
+            String causeMsg = cause.getMessage();
+            if (causeMsg != null) {
+                causeMsg = causeMsg.toLowerCase();
+                
+                // Check for duplicate key violation
+                if (causeMsg.contains("duplicate") || causeMsg.contains("unique")) {
+                    message = "Duplicate record: This value already exists in the database";
+                    errorType = "Duplicate Record";
+                }
+                // Check for foreign key constraint violation
+                else if (causeMsg.contains("foreign key") || causeMsg.contains("fk_") || causeMsg.contains("constraint")) {
+                    message = "Invalid foreign key: Referenced record does not exist";
+                    errorType = "Foreign Key Violation";
+                }
+                // Check for null constraint violation
+                else if (causeMsg.contains("not null") || causeMsg.contains("cannot be null")) {
+                    message = "Required field is missing or null";
+                    errorType = "Null Constraint Violation";
+                }
+                // Check for validation constraint violations
+                else if (causeMsg.contains("validation") || causeMsg.contains("invalid")) {
+                    message = "One or more fields contain invalid data";
+                    errorType = "Validation Error";
+                }
+            }
+
+            // Print the actual cause for debugging
+            ex.printStackTrace();
+        }
+
+        Map<String, Object> body = buildErrorResponse(400, errorType, message);
+        return new ResponseEntity<>(body, status);
     }
 
     // -------------------------------------------------------
@@ -302,42 +355,5 @@ public class GlobalExceptionHandler {
         Map<String, Object> body = buildErrorResponse(400, "Invalid Title Data", ex.getMessage());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
     }
-    
-    // -------------------------------------------------------
-    // 400 BAD REQUEST — jobId does not exist in the jobs table
-    // Thrown by the RepositoryEventHandler before save, so the FK
-    // violation never reaches the database layer.
-    // -------------------------------------------------------
-
-    
-    @ExceptionHandler(InvalidJobIdException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidJobId(InvalidJobIdException ex) {
-        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
-    }
-    
-    
-    // -------------------------------------------------------
-    // 400 BAD REQUEST — pubId does not exist in the publishers table
-    // Thrown by the RepositoryEventHandler before save, so the FK
-    // violation never reaches the database layer.
-    // -------------------------------------------------------
-    @ExceptionHandler(InvalidPublisherIdException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidPublisherId(InvalidPublisherIdException ex) {
-        Map<String, Object> body = buildErrorResponse(400, "Bad Request", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);   // 400
-    }
-    
-    // -------------------------------------------------------
-    // 404 NOT FOUND — Employee not found by emp_id
-    // Thrown by the RepositoryEventHandler or service layer when
-    // GET / PATCH targets an emp_id that does not exist.
-    // -------------------------------------------------------
-    @ExceptionHandler(EmployeeNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleEmployeeNotFound(EmployeeNotFoundException ex) {
-        Map<String, Object> body = buildErrorResponse(404, "Not Found", ex.getMessage());
-        return new ResponseEntity<>(body, HttpStatus.NOT_FOUND);   // 404
-    }
-    
 
 }
