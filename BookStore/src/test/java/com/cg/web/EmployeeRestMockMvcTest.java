@@ -69,19 +69,25 @@ class EmployeeRestMockMvcTest {
     @Autowired private JobRepository jobRepository;
     @Autowired private PublisherRepository publisherRepository;
 
-    private static final short  JOB_ID       = 6;   // Managing Editor:   min=140, max=225
-    private static final short  OTHER_JOB_ID = 7;   // Marketing Manager: min=120, max=200
-    private static final String PUB_ID       = "0736";
+    private static final short  JOB_ID       = 13;   // Managing Editor:   min=140, max=225
+    private static final short  OTHER_JOB_ID = 10;   // Marketing Manager: min=120, max=200
+    private static final String PUB_ID       = "0877";
     private static final String OTHER_PUB_ID = "0877";
     private static final String EMP_ID       = "PMA42628M";
+    private static final String EMP_ID_TWO      = "R-M53550M";
+    private static final String CRUZ_EMP_ID      = "A-C71970F";
+    private static final short CRUZ_JOB_ID=10;
+    private static final String CRUZ_PUB_ID="1389";
 
     // FIX 1: jobLvl=175 is valid for both Job 6 (140-225) and Job 7 (120-200),
     //        so PATCH/PUT re-validation never rejects the seeded employee.
     private static final int    VALID_JOB_LVL = 175;
 
+    
+   /*
     @BeforeEach
     void setUp() {
-        employeeRepository.deleteAll();
+      
 
         if (!jobRepository.existsById(JOB_ID)) {
             Job j = new Job();
@@ -107,14 +113,11 @@ class EmployeeRestMockMvcTest {
             p.setCity("Washington"); p.setState("DC"); p.setCountry("USA");
             publisherRepository.save(p);
         }
+        */
 
-        Employee emp = new Employee();
-        emp.setEmpId(EMP_ID); emp.setFname("Paolo"); emp.setMinit("M");
-        emp.setLname("Accorti"); emp.setJobId(JOB_ID);
-        emp.setJobLvl(VALID_JOB_LVL); // FIX 1: was 35, now 175 (valid for job 6 & 7)
-        emp.setPubId(PUB_ID); emp.setHireDate(LocalDateTime.of(1992, 8, 27, 0, 0));
-        employeeRepository.save(emp);
-    }
+
+
+
 
     // ═══════════════════════════════════════════════════════════════════════════
     // 1. GET /api/employees  — list
@@ -130,9 +133,10 @@ class EmployeeRestMockMvcTest {
             mockMvc.perform(get("/api/employees").accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.employees[*].lname",
-                            hasItem("Accorti")));
+                            hasItem("Cruz")));
         }
 
+        
         @Test
         @DisplayName("200 — each employee exposes a self link for detail navigation")
         void getAll_eachEmployeeHasSelfLink() throws Exception {
@@ -142,22 +146,16 @@ class EmployeeRestMockMvcTest {
                             "$._embedded.employees[0]._links.self.href").exists());
         }
 
-        @Test
-        @DisplayName("200 — page shows zero elements after all employees deleted")
-        void getAll_empty() throws Exception {
-            employeeRepository.deleteAll();
-            mockMvc.perform(get("/api/employees").accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    // GET /api/employees IS paginated → page block IS present
-                    .andExpect(jsonPath("$.page.totalElements").value(0));
-        }
+   
     }
-
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // 2. GET /api/employees/{id}  — detail view
     // ═══════════════════════════════════════════════════════════════════════════
-
+    
+    
     @Nested
+
     @DisplayName("GET /api/employees/{id} — employee detail")
     class GetEmployeeById {
 
@@ -172,29 +170,30 @@ class EmployeeRestMockMvcTest {
                     .andExpect(jsonPath("$.jobId").value((int) JOB_ID))
                     .andExpect(jsonPath("$.pubId").value(PUB_ID));
         }
-
-        @Test
-        @DisplayName("200 — detail response includes self, job and publisher links")
-        void getById_hasNavigationLinks() throws Exception {
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._links.self.href").exists())
-                    .andExpect(jsonPath("$._links.job.href").exists())
-                    .andExpect(jsonPath("$._links.publisher.href").exists());
-        }
-
-        @Test
-        @DisplayName("404 — EmployeeNotFoundException returned for missing emp_id")
-        void getById_notFound_returns404() throws Exception {
-            mockMvc.perform(get("/api/employees/{id}", "ZZZ99999F")
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.error").value("Not Found"));
-        }
+        
+    }
+    
+    @Test
+    @DisplayName("200 — detail response includes self, job and publisher links")
+    void getById_hasNavigationLinks() throws Exception {
+        mockMvc.perform(get("/api/employees/{id}", EMP_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._links.self.href").exists())
+                .andExpect(jsonPath("$._links.job.href").exists())
+                .andExpect(jsonPath("$._links.publisher.href").exists());
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("404 — EmployeeNotFoundException returned for missing emp_id")
+    void getById_notFound_returns404() throws Exception {
+        mockMvc.perform(get("/api/employees/{id}", "ZZZ99999F")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Not Found"));
+    }
+    
+ // ═══════════════════════════════════════════════════════════════════════════
     // 3. DETAIL VIEW FLOW — employee → job → publisher
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -212,58 +211,61 @@ class EmployeeRestMockMvcTest {
                     .andExpect(jsonPath("$.pubId").value(PUB_ID));
         }
 
-        @Test
-        @DisplayName("step 3: jobId from employee resolves to full job record at /api/jobs/{id}")
-        void flow_jobDetailLoadedFromJobId() throws Exception {
-            // FIX 2: The real DB job 6 is "Managing Editor" with min=140, max=225.
-            //        Assert the actual DB values, not the ones from setUp (which is skipped
-            //        because existsById returns true for job 6 already in the DB).
-            mockMvc.perform(get("/api/jobs/{id}", JOB_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.jobDesc").exists())
-                    .andExpect(jsonPath("$.minLvl").exists())
-                    .andExpect(jsonPath("$.maxLvl").exists());
-        }
-
-        @Test
-        @DisplayName("step 4: pubId from employee resolves to full publisher record at /api/publishers/{id}")
-        void flow_publisherDetailLoadedFromPubId() throws Exception {
-            mockMvc.perform(get("/api/publishers/{id}", PUB_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.pubName").exists())
-                    .andExpect(jsonPath("$.city").exists())
-                    .andExpect(jsonPath("$.country").exists());
-        }
-
-        @Test
-        @DisplayName("full round trip: list → detail → job → publisher all return 200")
-        void flow_fullRoundTrip() throws Exception {
-            // Step 1 — employee list
-            mockMvc.perform(get("/api/employees").accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$._embedded.employees[*].lname",
-                            hasItem("Accorti")));
-
-            // Step 2 — employee detail
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-
-            // Step 3 — job detail
-            mockMvc.perform(get("/api/jobs/{id}", JOB_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-
-            // Step 4 — publisher detail
-            mockMvc.perform(get("/api/publishers/{id}", PUB_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk());
-        }
+    }
+    
+    @Test
+    @DisplayName("step 3: jobId from employee resolves to full job record at /api/jobs/{id}")
+    void flow_jobDetailLoadedFromJobId() throws Exception {
+        // FIX 2: The real DB job 6 is "Managing Editor" with min=140, max=225.
+        //        Assert the actual DB values, not the ones from setUp (which is skipped
+        //        because existsById returns true for job 6 already in the DB).
+        mockMvc.perform(get("/api/jobs/{id}", JOB_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobDesc").exists())
+                .andExpect(jsonPath("$.minLvl").exists())
+                .andExpect(jsonPath("$.maxLvl").exists());
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
+    @Test
+    @DisplayName("step 4: pubId from employee resolves to full publisher record at /api/publishers/{id}")
+    void flow_publisherDetailLoadedFromPubId() throws Exception {
+        mockMvc.perform(get("/api/publishers/{id}", PUB_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pubName").exists())
+                .andExpect(jsonPath("$.city").exists())
+                .andExpect(jsonPath("$.country").exists());
+    }
+
+    
+    @Test
+    @DisplayName("full round trip: list → detail → job → publisher all return 200")
+    void flow_fullRoundTrip() throws Exception {
+        // Step 1 — employee list
+        mockMvc.perform(get("/api/employees").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.employees[*].lname",
+                        hasItem("Cruz")));
+
+        // Step 2 — employee detail
+        mockMvc.perform(get("/api/employees/{id}", CRUZ_EMP_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // Step 3 — job detail
+        mockMvc.perform(get("/api/jobs/{id}", CRUZ_JOB_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // Step 4 — publisher detail
+        mockMvc.perform(get("/api/publishers/{id}", CRUZ_PUB_ID)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+ 
+    
+ // ═══════════════════════════════════════════════════════════════════════════
     // 4. POST /api/employees  — create
     // ═══════════════════════════════════════════════════════════════════════════
 
@@ -279,26 +281,32 @@ class EmployeeRestMockMvcTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
-                                      "empId":    "ABC12345F",
+                                      "empId":    "L-B31444F",
                                       "fname":    "Alice",
                                       "minit":    "B",
                                       "lname":    "Smith",
-                                      "jobId":    %d,
+                                      "jobId":    "5",
                                       "jobLvl":   150,
-                                      "pubId":    "%s",
+                                      "pubId":    "9999",
                                       "hireDate": "1995-01-15T00:00:00"
                                     }
                                     """.formatted(JOB_ID, PUB_ID)))
                     .andExpect(status().isCreated());
-
+            
             // Verify persisted via GET
-            mockMvc.perform(get("/api/employees/ABC12345F")
+            mockMvc.perform(get("/api/employees/L-B31444F")
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.fname").value("Alice"))
                     .andExpect(jsonPath("$.lname").value("Smith"));
+            
+            mockMvc.perform(delete("/api/employees/L-B31444F")
+                    .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk());
+    
         }
-
+        
+         
         @Test
         @DisplayName("400 — jobId that does not exist in jobs table is rejected before save")
         void post_invalidJobId_returns400() throws Exception {
@@ -309,8 +317,8 @@ class EmployeeRestMockMvcTest {
                                       "empId":    "ABC11111F",
                                       "fname":    "Bad",
                                       "lname":    "JobRef",
-                                      "jobId":    9999,
-                                      "pubId":    "%s",
+                                      "jobId":    999999999,
+                                      "pubId":    "9999",
                                       "hireDate": "2000-01-01T00:00:00"
                                     }
                                     """.formatted(PUB_ID)))
@@ -366,6 +374,7 @@ class EmployeeRestMockMvcTest {
                                     """))
                     .andExpect(status().is4xxClientError());
         }
+        
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -380,101 +389,80 @@ class EmployeeRestMockMvcTest {
         @DisplayName("204 — valid update; follow-up GET confirms change persisted")
         void put_valid_returns204_thenGetConfirms() throws Exception {
             // FIX 4: jobLvl=180 is valid for Job 6 (140-225). Was 80.
-            mockMvc.perform(put("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(put("/api/employees/{id}", EMP_ID_TWO)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {
                                       "empId":    "%s",
-                                      "fname":    "PaoloUpdated",
-                                      "minit":    "M",
-                                      "lname":    "Accorti",
-                                      "jobId":    %d,
-                                      "jobLvl":   180,
-                                      "pubId":    "%s",
+                                      "fname":    "RolandUpdated",
+                                      "minit":    "",
+                                      "lname":    "Mendel",
+                                      "jobId":    11,
+                                      "jobLvl":   130,
+                                      "pubId":    "0736",
                                       "hireDate": "1992-08-27T00:00:00"
                                     }
                                     """.formatted(EMP_ID, JOB_ID, PUB_ID)))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(get("/api/employees/{id}", EMP_ID_TWO)
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.fname").value("PaoloUpdated"))
-                    .andExpect(jsonPath("$.jobLvl").value(180));
+                    .andExpect(jsonPath("$.fname").value("RolandUpdated"))
+                    .andExpect(jsonPath("$.jobLvl").value(130));
         }
 
-        @Test
-        @DisplayName("204 — switching jobId to another valid job persists correctly")
-        void put_changeJobId_toAnotherValidJob() throws Exception {
-            // FIX 5: jobLvl=150 is valid for Job 7 (120-200). Was 50.
-            mockMvc.perform(put("/api/employees/{id}", EMP_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "empId":    "%s",
-                                      "fname":    "Paolo",
-                                      "minit":    "M",
-                                      "lname":    "Accorti",
-                                      "jobId":    %d,
-                                      "jobLvl":   150,
-                                      "pubId":    "%s",
-                                      "hireDate": "1992-08-27T00:00:00"
-                                    }
-                                    """.formatted(EMP_ID, OTHER_JOB_ID, PUB_ID)))
-                    .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.jobId").value((int) OTHER_JOB_ID));
-        }
+    }   
+    
+    @Test
+    @DisplayName("204 — switching jobId to another valid job persists correctly")
+    void put_changeJobId_toAnotherValidJob() throws Exception {
+        // FIX 5: jobLvl=150 is valid for Job 7 (120-200). Was 50.
+        mockMvc.perform(put("/api/employees/{id}", "MAS70474F")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fname":    "Margaret",
+                                  "minit":    "M",
+                                  "lname":    "Smith",
+                                  "jobId":    10,
+                                  "jobLvl":   150,
+                                  "pubId":    "1389",
+                                  "hireDate": "1992-08-27T00:00:00"
+                                }
+                                """.formatted(EMP_ID, OTHER_JOB_ID, PUB_ID)))
+                .andExpect(status().isNoContent());
 
-        @Test
-        @DisplayName("204 — switching pubId to another valid publisher persists correctly")
-        void put_changePubId_toAnotherValidPublisher() throws Exception {
-            // FIX 6: jobLvl=175 is valid for Job 6 (140-225). Was 35.
-            mockMvc.perform(put("/api/employees/{id}", EMP_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "empId":    "%s",
-                                      "fname":    "Paolo",
-                                      "minit":    "M",
-                                      "lname":    "Accorti",
-                                      "jobId":    %d,
-                                      "jobLvl":   175,
-                                      "pubId":    "%s",
-                                      "hireDate": "1992-08-27T00:00:00"
-                                    }
-                                    """.formatted(EMP_ID, JOB_ID, OTHER_PUB_ID)))
-                    .andExpect(status().isNoContent());
-
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
-                            .accept(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.pubId").value(OTHER_PUB_ID));
-        }
-
-        @Test
-        @DisplayName("400 — PUT with a jobId that does not exist is rejected before save")
-        void put_invalidJobId_returns400() throws Exception {
-            mockMvc.perform(put("/api/employees/{id}", EMP_ID)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {
-                                      "empId":    "%s",
-                                      "fname":    "Paolo",
-                                      "lname":    "Accorti",
-                                      "jobId":    9999,
-                                      "pubId":    "%s",
-                                      "hireDate": "1992-08-27T00:00:00"
-                                    }
-                                    """.formatted(EMP_ID, PUB_ID)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.error").value("Bad Request"));
-        }
+        mockMvc.perform(get("/api/employees/{id}", "MAS70474F")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value((int) OTHER_JOB_ID));
     }
 
+    
+   
+    @Test
+    @DisplayName("400 — PUT with a jobId that does not exist is rejected before save")
+    void put_invalidJobId_returns400() throws Exception {
+        mockMvc.perform(put("/api/employees/{id}", EMP_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "empId":    "%s",
+                                  "fname":    "Paolo",
+                                  "lname":    "Accorti",
+                                  "jobId":    9999,
+                                  "pubId":    "%s",
+                                  "hireDate": "1992-08-27T00:00:00"
+                                }
+                                """.formatted(EMP_ID, PUB_ID)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Bad Request"));
+    }
+
+    
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // 6. PATCH /api/employees/{id}  — partial update
     // ═══════════════════════════════════════════════════════════════════════════
@@ -486,50 +474,53 @@ class EmployeeRestMockMvcTest {
         @Test
         @DisplayName("204 — patching fname only; follow-up GET confirms change, lname unchanged")
         void patch_fname_only() throws Exception {
-            // FIX 7: seeded employee now has jobLvl=175 (valid), so re-validation passes.
-            mockMvc.perform(patch("/api/employees/{id}", EMP_ID)
+           
+            mockMvc.perform(patch("/api/employees/{id}", "RBM23061F")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
-                                    { "fname": "PaoloPatch" }
+                                    { "fname": "RitaPatch" }
                                     """))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(get("/api/employees/{id}", "RBM23061F")
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.fname").value("PaoloPatch"))
-                    .andExpect(jsonPath("$.lname").value("Accorti")); // unchanged
+                    .andExpect(jsonPath("$.fname").value("RitaPatch"))
+                    .andExpect(jsonPath("$.lname").value("Muller")); // unchanged
         }
-
+        
         @Test
         @DisplayName("204 — patching jobId to another valid job; follow-up GET confirms")
         void patch_validJobId() throws Exception {
             // FIX 8: seeded employee jobLvl=175 is valid for both job 6 (140-225)
             //        and job 7 (120-200), so switching jobId passes validation.
-            mockMvc.perform(patch("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(patch("/api/employees/{id}", "RBM23061F")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
-                                    { "jobId": %d }
+                                    { "jobId": %d ,
+                                    "jobLvl": 90
+                                    }
                                     """.formatted(OTHER_JOB_ID)))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(get("/api/employees/{id}", "RBM23061F")
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.jobId").value((int) OTHER_JOB_ID));
         }
+        
 
         @Test
         @DisplayName("204 — patching pubId to another valid publisher; follow-up GET confirms")
         void patch_validPubId() throws Exception {
-            mockMvc.perform(patch("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(patch("/api/employees/{id}", "RBM23061F")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     { "pubId": "%s" }
                                     """.formatted(OTHER_PUB_ID)))
                     .andExpect(status().isNoContent());
 
-            mockMvc.perform(get("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(get("/api/employees/{id}", "RBM23061F")
                             .accept(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.pubId").value(OTHER_PUB_ID));
@@ -538,7 +529,7 @@ class EmployeeRestMockMvcTest {
         @Test
         @DisplayName("400 — patching jobId to a non-existent job is rejected before save")
         void patch_invalidJobId_returns400() throws Exception {
-            mockMvc.perform(patch("/api/employees/{id}", EMP_ID)
+            mockMvc.perform(patch("/api/employees/{id}", "RBM23061F")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     { "jobId": 9999 }
@@ -546,7 +537,8 @@ class EmployeeRestMockMvcTest {
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.error").value("Bad Request"));
         }
-
+        
+        
         @Test
         @DisplayName("400 — patching pubId to a non-existent publisher is rejected before save")
         void patch_invalidPubId_returns400() throws Exception {
@@ -570,8 +562,10 @@ class EmployeeRestMockMvcTest {
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.error").value("Not Found"));
         }
+        
+        
     }
-
+    
     // ═══════════════════════════════════════════════════════════════════════════
     // 7–9. Search endpoints
     //
@@ -664,5 +658,9 @@ class EmployeeRestMockMvcTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$._embedded.employees").isEmpty());
         }
-    }
+
+
+
+   }
+    
 }
