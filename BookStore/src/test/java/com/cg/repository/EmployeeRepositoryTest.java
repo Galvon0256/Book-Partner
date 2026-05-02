@@ -1,6 +1,7 @@
 package com.cg.repository;
 
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -41,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Transactional
 @ActiveProfiles("test")
 class EmployeeRepositoryTest {
 
