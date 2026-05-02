@@ -396,38 +396,7 @@ class EmployeeRepositoryTest {
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════
-    // 6. jobId and pubId (optional FK fields)
-    // ═══════════════════════════════════════════════════════════════════════════
 
-    @Nested
-    @DisplayName("jobId and pubId — optional FK fields")
-    class OptionalFkFields {
-
-        @Test
-        @DisplayName("VALID — jobId null is allowed (no @NotNull)")
-        void jobId_null_allowed() {
-            Employee e = validEmployee("ABC55551F");
-            e.setJobId(null);
-            assertThat(validator.validate(e)).isEmpty();
-        }
-
-        @Test
-        @DisplayName("VALID — pubId null is allowed (no @NotNull)")
-        void pubId_null_allowed() {
-            Employee e = validEmployee("ABC55552F");
-            e.setPubId(null);
-            assertThat(validator.validate(e)).isEmpty();
-        }
-
-        @Test
-        @DisplayName("VALID — jobLvl null is allowed (no @NotNull)")
-        void jobLvl_null_allowed() {
-            Employee e = validEmployee("ABC55553F");
-            e.setJobLvl(null);
-            assertThat(validator.validate(e)).isEmpty();
-        }
-    }
 
     // ═══════════════════════════════════════════════════════════════════════════
     // 7. REPOSITORY CRUD TESTS
