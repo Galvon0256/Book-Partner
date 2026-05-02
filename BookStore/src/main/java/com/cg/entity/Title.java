@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 /**
@@ -90,6 +90,7 @@ public class Title {
     @Size(max = 200, message = "Notes must be at most 200 characters")
     private String notes;
 
+    @NotNull(message = "Publication date is required")
     @Column(name = "pubdate")
     private LocalDateTime pubdate;
 
