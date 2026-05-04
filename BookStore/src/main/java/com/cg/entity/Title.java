@@ -136,6 +136,10 @@ public class Title {
         return pubdate;
     }
 
+    public String getPubId() {
+    return publisher != null ? publisher.getPubId() : null;
+}
+
     // ── Setters ──────────────────────────────────────────────────
 
     public void setTitleId(String titleId) {
